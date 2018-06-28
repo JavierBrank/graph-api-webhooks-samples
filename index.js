@@ -27,7 +27,7 @@ var received_updates = [];
 app.get('/', function(req, res) {
   console.log(req);
   res.send('<pre>' + JSON.stringify(received_updates, null, 2) + '</pre>');
-  res.send('<pre>Test</pre>');
+  
 });
 
 
@@ -42,29 +42,40 @@ app.get(['/facebook', '/instagram'], function(req, res) {
     res.sendStatus(400);
   }
 });
-
-app.get(['/bd'], function(req, res) {   
 var conString = process.env.ELEPHANTSQL_URL || "postgres://admin:admin@10.30.0.231:5432/db_inscripcion";
 
 var client = new pg.Client(conString);
+
+app.get(['/bd','/basededatos','/db'], function(req, res) {   
+
 client.connect(function(err) {
   if(err) {
-    res.send('<pre>could not connect to postgres: '+ err +'</pre>');
-    return console.error('could not connect to postgres', err);
+    res.write ('<pre>No se puede conectar con el servidor de basededatos: '+ err +'</pre>')
+    return console.error('No se puede conectar con el servidor de basededatos', err);
 
   }
   client.query('SELECT NOW() AS "theTime"', function(err, result) {
     if(err) {
-      res.send('<pre>error running query: '+ err +'</pre>');
+      res.write('<pre>Error con query: '+ err +'</pre>')
       return console.error('error running query', err);
+    }else{
+       res.write('<pre>Query ejecutada con exito: '+ result.rows[0].theTime +'</pre>');
     }
+    
+    res.write('<pre>' + JSON.stringify(result) + '</pre>')
    
-    res.send('<pre>' + JSON.stringify(result) + '</pre>')
     console.log(result.rows[0].theTime);
     //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
+    res.end();
     
-    client.end();
+   client.end((err) => {
+  console.log('client has disconnected')
+  if (err) {
+    console.log('error during disconnection', err.stack)
+  }
+})
   });
+   
 });
 
 });
