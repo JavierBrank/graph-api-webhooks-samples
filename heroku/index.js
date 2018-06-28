@@ -57,10 +57,13 @@ client.connect(function(err) {
     if(err) {
       res.send('<pre>error running query: '+ err +'</pre>');
       return console.error('error running query', err);
-    }
+    }else(
+    res.send('<pre>Query ejecutada con exito</pre>');
+    res.send('<pre>' + JSON.stringify(result, null, 2) + '</pre>');
     res.send('<pre>error running query: '+ result.rows[0].theTime +'</pre>');
     console.log(result.rows[0].theTime);
     //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
+    )
     client.end();
   });
 });
