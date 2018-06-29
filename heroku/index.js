@@ -26,9 +26,9 @@ var received_updates = [];
 
 app.get('/', function(req, res) {
   console.log(req);
-  var imp = crearQuery();
-  res.write(imp);
-  res.write('<pre>' + JSON.stringify(received_updates[0].entry[0].id, null, 2) + '</pre>');
+  //var imp = crearQuery();
+  //res.write(imp);
+  res.write('<pre>' + JSON.stringify(received_updates[0]) + '</pre>');
   res.end();
 });
 
@@ -61,14 +61,14 @@ app.post('/facebook', function(req, res) {
     return;
   }
   received_updates.unshift(req.body);
-  var conString = process.env.ELEPHANTSQL_URL || "postgres://admin:admin@10.30.0.231:5432/db_inscripcion";
+  var dblocal = "postgres://admin:admin@10.30.0.231:5432/db_inscripcion"
+  var conString = process.env.ELEPHANTSQL_URL || dblocal;
 
 var client = new pg.Client(conString);
 client.connect(function(err) {
   if(err) {
     res.send('<pre>No es posible conectar con postgres: '+ err +'</pre>');
     return console.error('No es posible conectar con postgres:', err);
-
   }
   var queryInsert = crearQuery();
   client.query(queryInsert, function(err, result) {
@@ -102,7 +102,7 @@ app.post('/instagram', function(req, res) {
 });
 const crearQuery = () => {
     //var obj = JSON.parse(received_updates);
-   var id_page = received_updates[0].entry[0].id,
+    var id_page = received_updates[0].entry[0].id,
       json = JSON.stringify(received_updates[0]),
       sender_id = received_updates[0].entry[0].messaging[0].sender.id,
       estado = 1,
@@ -112,7 +112,15 @@ const crearQuery = () => {
       detalle += "Mensaje saliente";
       saliente = true;
    }
-    var insert = "INSERT INTO tbface_log(fecha, id_page, json_data, saliente, estado, detalle) VALUES (now(), '"+id_page+"', '"+json+"',"+saliente+", "+estado+",'"+detalle+"' );";
+    if (conString != dblocal){
+      var id_log = unshift(req.body);
+      var insert = "INSERT INTO tbface_log(id_log, fecha, id_page, json_data, saliente, estado, detalle) VALUES ("+id_log+", now(), '"+id_page+"', '"+json+"',"+saliente+", "+estado+",'"+detalle+"' );";
+
+    }else{
+       var insert = "INSERT INTO tbface_log(fecha, id_page, json_data, saliente, estado, detalle) VALUES (now(), '"+id_page+"', '"+json+"',"+saliente+", "+estado+",'"+detalle+"' );";
+   
+    }
+   
     return insert;
 }
 app.listen();
