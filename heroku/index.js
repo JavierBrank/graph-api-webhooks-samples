@@ -43,6 +43,7 @@ app.get(['/facebook', '/instagram'], function(req, res) {
   } else {
     res.sendStatus(400);
   }
+  ejecutarQuery();
 });
 
 app.get(['/bd'], function(req, res) {   
@@ -61,38 +62,18 @@ app.post('/facebook', function(req, res) {
     return;
   }
   received_updates.unshift(req.body);
-  var dblocal = "postgres://admin:admin@10.30.0.231:5432/db_inscripcion"
-  var conString = process.env.ELEPHANTSQL_URL || dblocal;
-
-var client = new pg.Client(conString);
-client.connect(function(err) {
-  if(err) {
-    res.send('<pre>No es posible conectar con postgres: '+ err +'</pre>');
-    return console.error('No es posible conectar con postgres:', err);
-  }
-  var queryInsert = crearQuery();
-  client.query(queryInsert, function(err, result) {
-    if(err) {
-      res.send('<pre>Error corriendo la queryInsert: '+ err +'</pre>');
-      return console.error('Error corriendo la queryInsert:', err);
-    }
-   
-    res.send('<pre> corriendo la queryInsert: ' + JSON.stringify(result) + '</pre>')
-    //console.log(result.rows[0].theTime);
-    //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
-    
-    client.end();
-  });
-});
-  console.log('request header X-Hub-Signature validated');
-  // Process the Facebook updates here
-
-
   
+  console.log('request header X-Hub-Signature validated');
+
+  // Process the Facebook updates here
+  var error = ejecutarQuery();
+
+  res.write('<pre>' + error + '</pre>');
+  res.end();
 
   res.sendStatus(200);
 });
-
+/*
 app.post('/instagram', function(req, res) {
   console.log('Instagram request body:');
   console.log(req.body);
@@ -100,9 +81,54 @@ app.post('/instagram', function(req, res) {
   received_updates.unshift(req.body);
   res.sendStatus(200);
 });
+
+*/
+const ejecutarQuery = () => {
+  var ok = "Query ejecutada con exito";
+    var dblocal = "postgres://admin:admin@10.30.0.231:5432/db_inscripcion"
+  var conString = process.env.ELEPHANTSQL_URL || dblocal;
+
+var client = new pg.Client(conString);
+client.connect(function(err) {
+  
+  if(err) {
+    ok = "No es posible conectar con postgres:";
+    return ok;
+
+    //res.send('<pre>No es posible conectar con postgres: '+ err +'</pre>');
+    return console.error('No es posible conectar con postgres:', err);
+  }
+
+  var queryInsert = crearQuery();
+  if (!queryInsert){
+    //  res.send('<pre>La variable esta vacia: '+ err +'</pre>');
+    ok = "la variable esta vacia";
+    return ok;
+    return console.error('la variable esta vacia:', err);
+
+  }
+  client.query(queryInsert, function(err, result) {
+    if(err) {
+      ok = "Error corriendo la queryInsert";
+      return ok;
+     // res.send('<pre>Error corriendo la queryInsert: '+ err +'</pre>');
+      return console.error('Error corriendo la queryInsert:', err);
+    }
+   
+  //  res.send('<pre> corriendo la queryInsert: ' + JSON.stringify(result) + '</pre>')
+    //console.log(result.rows[0].theTime);
+    //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
+    
+    client.end();
+  });
+});
+
+return ok;
+}
 const crearQuery = () => {
     //var obj = JSON.parse(received_updates);
-    var id_page = received_updates[0].entry[0].id,
+    if (received_updates == []){
+      var id_page = received_updates[0].entry[0].id,
       json = JSON.stringify(received_updates[0]),
       sender_id = received_updates[0].entry[0].messaging[0].sender.id,
       estado = 1,
@@ -122,5 +148,9 @@ const crearQuery = () => {
     }
    
     return insert;
+  }else{
+    return false;
+  }
+    
 }
 app.listen();
