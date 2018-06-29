@@ -43,7 +43,11 @@ app.get(['/facebook', '/instagram'], function(req, res) {
   } else {
     res.sendStatus(400);
   }
-  ejecutarQuery();
+   var error = ejecutarQuery();
+
+  res.write('<pre>' + error + '</pre>');
+  res.end();
+  
 });
 
 app.get(['/bd'], function(req, res) {   
