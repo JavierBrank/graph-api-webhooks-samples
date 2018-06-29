@@ -39,21 +39,19 @@ app.get(['/facebook', '/instagram'], function(req, res) {
     req.param('hub.mode') == 'subscribe' &&
     req.param('hub.verify_token') == token
   ) {
-    res.send(req.param('hub.challenge'));
+    res.write(req.param('hub.challenge'));
   } else {
-    res.sendStatus(400);
+   // res.sendStatus(400);
   }
    var error = ejecutarQuery();
 
-  res.write('<pre>' + error + '</pre>');
+  //res.write('<pre> ' + error + '</pre>');
+  console.log(ejecutarQuery());
   res.end();
-  
+ 
 });
 
-app.get(['/bd'], function(req, res) {   
 
-
-});
 
 
 
@@ -72,7 +70,7 @@ app.post('/facebook', function(req, res) {
   // Process the Facebook updates here
   var error = ejecutarQuery();
 
-  res.write('<pre>' + error + '</pre>');
+  res.write('<pre>ejecutarQuery();: ' + error + '</pre>');
   res.end();
 
   res.sendStatus(200);
@@ -88,19 +86,21 @@ app.post('/instagram', function(req, res) {
 
 */
 const ejecutarQuery = () => {
-  var ok = "Query ejecutada con exito";
+  
     var dblocal = "postgres://admin:admin@10.30.0.231:5432/db_inscripcion"
   var conString = process.env.ELEPHANTSQL_URL || dblocal;
-
+ var ok = "nada";
 var client = new pg.Client(conString);
 client.connect(function(err) {
-  
+ 
   if(err) {
     ok = "No es posible conectar con postgres:";
     return ok;
 
     //res.send('<pre>No es posible conectar con postgres: '+ err +'</pre>');
     return console.error('No es posible conectar con postgres:', err);
+  }else {
+    ok = "query ok:";
   }
 
   var queryInsert = crearQuery();
@@ -111,12 +111,18 @@ client.connect(function(err) {
     return console.error('la variable esta vacia:', err);
 
   }
+else
+{
+  ok = "query ok ok ";
+}
   client.query(queryInsert, function(err, result) {
     if(err) {
       ok = "Error corriendo la queryInsert";
       return ok;
      // res.send('<pre>Error corriendo la queryInsert: '+ err +'</pre>');
       return console.error('Error corriendo la queryInsert:', err);
+    }else {
+      ok = "query ok ok  ok ";
     }
    
   //  res.send('<pre> corriendo la queryInsert: ' + JSON.stringify(result) + '</pre>')
@@ -124,10 +130,12 @@ client.connect(function(err) {
     //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
     
     client.end();
+    
   });
+  return ok;
 });
 
-return ok;
+
 }
 const crearQuery = () => {
     //var obj = JSON.parse(received_updates);
