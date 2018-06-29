@@ -22,12 +22,38 @@ app.use(xhub({ algorithm: 'sha1', secret: process.env.APP_SECRET }));
 app.use(bodyParser.json());
 
 var token = process.env.TOKEN || 'token';
-var received_updates = [];
+var received_updates = [ {
+    "object": "page",
+    "entry": [
+      {
+        "id": "159709944504329",
+        "time": 1530302391904,
+        "messaging": [
+          {
+            "sender": {
+              "id": "1475559052473293"
+            },
+            "recipient": {
+              "id": "159709944504329"
+            },
+            "timestamp": 1530302391491,
+            "message": {
+              "mid": "pamPKOAp5ZsQZM8eCBqXJo6YZM1p8gWrrpUaRBsxRqKP4SckYX77jerAIN4330fYixbfinrQGX5mzjGHD8tS7w",
+              "seq": 216,
+              "text": "texteo texto"
+            }
+          }
+        ]
+      }
+    ]
+  }];
 
 app.get('/', function(req, res) {
   console.log(req);
-  res.send('<pre>' + JSON.stringify(received_updates, null, 2) + '</pre>');
-  res.send('<pre>Test</pre>');
+  var imp = crearQuery();
+  res.write(imp);
+  res.write('<pre>' + JSON.stringify(received_updates[0].entry[0].id, null, 2) + '</pre>');
+  res.end();
 });
 
 
@@ -49,18 +75,19 @@ var conString = process.env.ELEPHANTSQL_URL || "postgres://admin:admin@10.30.0.2
 var client = new pg.Client(conString);
 client.connect(function(err) {
   if(err) {
-    res.send('<pre>could not connect to postgres: '+ err +'</pre>');
-    return console.error('could not connect to postgres', err);
+    res.send('<pre>No es posible conectar con postgres: '+ err +'</pre>');
+    return console.error('No es posible conectar con postgres:', err);
 
   }
-  client.query('SELECT NOW() AS "theTime"', function(err, result) {
+  var queryInsert = crearQuery();
+  client.query(queryInsert, function(err, result) {
     if(err) {
-      res.send('<pre>error running query: '+ err +'</pre>');
-      return console.error('error running query', err);
+      res.send('<pre>Error corriendo la queryInsert: '+ err +'</pre>');
+      return console.error('Error corriendo la queryInsert:', err);
     }
    
-    res.send('<pre>' + JSON.stringify(result) + '</pre>')
-    console.log(result.rows[0].theTime);
+    res.send('<pre> corriendo la queryInsert: ' + JSON.stringify(result) + '</pre>')
+    //console.log(result.rows[0].theTime);
     //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
     
     client.end();
@@ -82,7 +109,10 @@ app.post('/facebook', function(req, res) {
 
   console.log('request header X-Hub-Signature validated');
   // Process the Facebook updates here
+
+
   received_updates.unshift(req.body);
+
   res.sendStatus(200);
 });
 
@@ -93,5 +123,19 @@ app.post('/instagram', function(req, res) {
   received_updates.unshift(req.body);
   res.sendStatus(200);
 });
-
+const crearQuery = () => {
+    //var obj = JSON.parse(received_updates);
+   var id_page = received_updates[0].entry[0].id,
+      json = JSON.stringify(received_updates[0]),
+      sender_id = received_updates[0].entry[0].messaging[0].sender.id,
+      estado = 1,
+      saliente = false,
+      detalle = "Mensaje entrante";
+   if (id_page == sender_id) {
+      detalle += "Mensaje saliente";
+      saliente = true;
+   }
+    var insert = "INSERT INTO tbface_log(fecha, id_page, json_data, saliente, estado, detalle) VALUES (now(), '"+id_page+"', '"+json+"',"+saliente+", "+estado+",'"+detalle+"' );";
+    return insert;
+}
 app.listen();
