@@ -22,31 +22,7 @@ app.use(xhub({ algorithm: 'sha1', secret: process.env.APP_SECRET }));
 app.use(bodyParser.json());
 
 var token = process.env.TOKEN || 'token';
-var received_updates = [ {
-    "object": "page",
-    "entry": [
-      {
-        "id": "159709944504329",
-        "time": 1530302391904,
-        "messaging": [
-          {
-            "sender": {
-              "id": "1475559052473293"
-            },
-            "recipient": {
-              "id": "159709944504329"
-            },
-            "timestamp": 1530302391491,
-            "message": {
-              "mid": "pamPKOAp5ZsQZM8eCBqXJo6YZM1p8gWrrpUaRBsxRqKP4SckYX77jerAIN4330fYixbfinrQGX5mzjGHD8tS7w",
-              "seq": 216,
-              "text": "texteo texto"
-            }
-          }
-        ]
-      }
-    ]
-  }];
+var received_updates = [];
 
 app.get('/', function(req, res) {
   console.log(req);
@@ -70,7 +46,22 @@ app.get(['/facebook', '/instagram'], function(req, res) {
 });
 
 app.get(['/bd'], function(req, res) {   
-var conString = process.env.ELEPHANTSQL_URL || "postgres://admin:admin@10.30.0.231:5432/db_inscripcion";
+
+
+});
+
+
+
+app.post('/facebook', function(req, res) {
+  console.log('Facebook request body:', req.body);
+
+  if (!req.isXHubValid()) {
+    console.log('Warning - request header X-Hub-Signature not present or invalid');
+    res.sendStatus(401);
+    return;
+  }
+  received_updates.unshift(req.body);
+  var conString = process.env.ELEPHANTSQL_URL || "postgres://admin:admin@10.30.0.231:5432/db_inscripcion";
 
 var client = new pg.Client(conString);
 client.connect(function(err) {
@@ -93,25 +84,11 @@ client.connect(function(err) {
     client.end();
   });
 });
-
-});
-
-
-
-app.post('/facebook', function(req, res) {
-  console.log('Facebook request body:', req.body);
-
-  if (!req.isXHubValid()) {
-    console.log('Warning - request header X-Hub-Signature not present or invalid');
-    res.sendStatus(401);
-    return;
-  }
-
   console.log('request header X-Hub-Signature validated');
   // Process the Facebook updates here
 
 
-  received_updates.unshift(req.body);
+  
 
   res.sendStatus(200);
 });
